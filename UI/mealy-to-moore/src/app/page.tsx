@@ -11,14 +11,25 @@ type Transition = {
   output: string;
 };
 
+type MooreState = {
+  name: string;
+  output: number;
+};
+
 type MachineData = {
   states: string[];
   transitions: Transition[];
 };
 
+type MooreMachineData = {
+  moore_states: MooreState[];
+  transitions: { [key: string]: string[] };
+  inputs_per_state: number;
+};
+
 type ConversionResult = {
   original: MachineData;
-  converted: MachineData;
+  converted: MooreMachineData;
 };
 
 export default function Home() {
@@ -61,14 +72,29 @@ export default function Home() {
     if ((!input.trim() && !uploadedImage)) return;
 
     setIsProcessing(true);
-    // Placeholder for actual backend call
-    setTimeout(() => {
-      setResult({
-        original: { states: ["q0", "q1"], transitions: [{ from: "q0", to: "q1", input: "0", output: "1" }] },
-        converted: { states: ["s0", "s1", "s2"], transitions: [{ from: "s0", to: "s1", input: "0", output: "" }] }
+    try {
+      const response = await fetch('http://localhost:8000/convert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input_text: input
+        })
       });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error('Error:', error);
+      // You might want to add error state handling here
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -195,18 +221,67 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="w-full space-y-8"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8">
+              {/* Mealy Machine Table */}
               <div className="backdrop-blur-sm bg-white/5 rounded-lg shadow-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-bold mb-4 text-purple-400">Original Mealy Machine</h2>
-                <pre className="mt-4 bg-black/20 p-4 rounded-md overflow-auto">
-                  {JSON.stringify(result.original, null, 2)}
-                </pre>
+                <h2 className="text-xl font-bold mb-4 text-purple-400">Mealy Machine</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="text-left p-2">State</th>
+                        {Array.from({ length: result.original.transitions.length / result.original.states.length }, (_, i) => (
+                          <>
+                            <th className="text-left p-2" key={`at_${i}`}>At_{i}</th>
+                            <th className="text-left p-2" key={`output_${i}`}>Output_{i}</th>
+                          </>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.original.states.map((state) => (
+                        <tr key={state} className="border-b border-gray-700/50">
+                          <td className="p-2">{state}</td>
+                          {result.original.transitions
+                            .filter(t => t.from === state)
+                            .map((transition, i) => (
+                              <>
+                                <td className="p-2" key={`to_${i}`}>{transition.to}</td>
+                                <td className="p-2" key={`out_${i}`}>{transition.output}</td>
+                              </>
+                            ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
+              {/* Moore Machine Table */}
               <div className="backdrop-blur-sm bg-white/5 rounded-lg shadow-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-bold mb-4 text-blue-400">Converted Moore Machine</h2>
-                <pre className="mt-4 bg-black/20 p-4 rounded-md overflow-auto">
-                  {JSON.stringify(result.converted, null, 2)}
-                </pre>
+                <h2 className="text-xl font-bold mb-4 text-blue-400">Moore Machine</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="text-left p-2">State</th>
+                        {Array.from({ length: result.converted.inputs_per_state }, (_, i) => (
+                          <th className="text-left p-2" key={`input_${i}`}>On Input {i}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.converted.moore_states.map((state) => (
+                        <tr key={state.name} className="border-b border-gray-700/50">
+                          <td className="p-2">{state.name}</td>
+                          {result.converted.transitions[state.name].map((transition, i) => (
+                            <td className="p-2" key={`transition_${i}`}>{transition}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </motion.div>
