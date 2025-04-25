@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 // Define types for the state
@@ -11,67 +11,29 @@ type Transition = {
   output: string;
 };
 
-type MooreState = {
-  name: string;
-  output: number;
-};
-
 type MachineData = {
   states: string[];
   transitions: Transition[];
 };
 
-type MooreMachineData = {
-  moore_states: MooreState[];
-  transitions: { [key: string]: string[] };
-  inputs_per_state: number;
-};
-
 type ConversionResult = {
   original: MachineData;
-  converted: MooreMachineData;
+  converted: MachineData;
 };
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<ConversionResult | null>(null);
-  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      setUploadedImage(file);
-
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleRemoveImage = () => {
-    setUploadedImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && !uploadedImage)) return;
+    if (!input.trim()) return;
 
     setIsProcessing(true);
+    setError(null);
+
     try {
       const response = await fetch('http://localhost:8000/convert', {
         method: 'POST',
@@ -79,19 +41,19 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          input_text: input
+          input_text: input.trim()
         })
       });
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       setResult(data);
-    } catch (error) {
-      console.error('Error:', error);
-      // You might want to add error state handling here
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Failed to convert machine. Please check your input and try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -122,7 +84,6 @@ export default function Home() {
           className="w-full max-w-3xl"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Text Input */}
             <div className="relative backdrop-blur-sm bg-white/5 rounded-lg shadow-2xl border border-gray-700 p-1">
               <div className="flex items-start">
                 <div className="p-4 text-gray-400">
@@ -133,7 +94,7 @@ export default function Home() {
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Enter Mealy machine description or paste transition table..."
+                  placeholder="Enter Mealy machine transition table..."
                   className="flex-1 h-48 p-4 bg-transparent outline-none text-white resize-none"
                 />
               </div>
@@ -143,62 +104,14 @@ export default function Home() {
               }}></div>
             </div>
 
-            {/* OR Divider */}
-            <div className="relative flex items-center py-2">
-              <div className="flex-grow border-t border-gray-700"></div>
-              <span className="flex-shrink mx-4 text-gray-400">OR</span>
-              <div className="flex-grow border-t border-gray-700"></div>
-            </div>
-
-            {/* Image Upload */}
-            <div className="relative backdrop-blur-sm bg-white/5 rounded-lg shadow-2xl border border-gray-700 p-6">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                ref={fileInputRef}
-                className="hidden"
-              />
-
-              {imagePreview ? (
-                <div className="relative">
-                  <img 
-                    src={imagePreview} 
-                    alt="Uploaded Mealy machine" 
-                    className="max-h-64 mx-auto rounded-md object-contain"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white rounded-full p-1"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <div 
-                  onClick={handleUploadClick}
-                  className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-purple-400 transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="mt-4 text-gray-300">Upload image of Mealy machine</p>
-                  <p className="mt-2 text-sm text-gray-400">Supports PNG, JPG, JPEG, GIF</p>
-                </div>
-              )}
-            </div>
-
             <div className="flex justify-end">
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 type="submit"
-                disabled={isProcessing || (!input.trim() && !uploadedImage)}
+                disabled={isProcessing || !input.trim()}
                 className={`px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 font-medium text-white 
-                  ${(isProcessing || (!input.trim() && !uploadedImage)) ? 'opacity-70 cursor-not-allowed' : 'hover:from-purple-600 hover:to-blue-600'}`}
+                  ${(isProcessing || !input.trim()) ? 'opacity-70 cursor-not-allowed' : 'hover:from-purple-600 hover:to-blue-600'}`}
               >
                 {isProcessing ? (
                   <div className="flex items-center">
@@ -214,6 +127,13 @@ export default function Home() {
           </form>
         </motion.div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="w-full max-w-3xl mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
+            {error}
+          </div>
+        )}
+
         {/* Results Area */}
         {result && (
           <motion.div
@@ -221,67 +141,18 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="w-full space-y-8"
           >
-            <div className="grid grid-cols-1 gap-8">
-              {/* Mealy Machine Table */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="backdrop-blur-sm bg-white/5 rounded-lg shadow-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-bold mb-4 text-purple-400">Mealy Machine</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-700">
-                        <th className="text-left p-2">State</th>
-                        {Array.from({ length: result.original.transitions.length / result.original.states.length }, (_, i) => (
-                          <>
-                            <th className="text-left p-2" key={`at_${i}`}>At_{i}</th>
-                            <th className="text-left p-2" key={`output_${i}`}>Output_{i}</th>
-                          </>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.original.states.map((state) => (
-                        <tr key={state} className="border-b border-gray-700/50">
-                          <td className="p-2">{state}</td>
-                          {result.original.transitions
-                            .filter(t => t.from === state)
-                            .map((transition, i) => (
-                              <>
-                                <td className="p-2" key={`to_${i}`}>{transition.to}</td>
-                                <td className="p-2" key={`out_${i}`}>{transition.output}</td>
-                              </>
-                            ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <h2 className="text-xl font-bold mb-4 text-purple-400">Original Mealy Machine</h2>
+                <pre className="mt-4 bg-black/20 p-4 rounded-md overflow-auto">
+                  {JSON.stringify(result.original, null, 2)}
+                </pre>
               </div>
-
-              {/* Moore Machine Table */}
               <div className="backdrop-blur-sm bg-white/5 rounded-lg shadow-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-bold mb-4 text-blue-400">Moore Machine</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-700">
-                        <th className="text-left p-2">State</th>
-                        {Array.from({ length: result.converted.inputs_per_state }, (_, i) => (
-                          <th className="text-left p-2" key={`input_${i}`}>On Input {i}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.converted.moore_states.map((state) => (
-                        <tr key={state.name} className="border-b border-gray-700/50">
-                          <td className="p-2">{state.name}</td>
-                          {result.converted.transitions[state.name].map((transition, i) => (
-                            <td className="p-2" key={`transition_${i}`}>{transition}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <h2 className="text-xl font-bold mb-4 text-blue-400">Converted Moore Machine</h2>
+                <pre className="mt-4 bg-black/20 p-4 rounded-md overflow-auto">
+                  {JSON.stringify(result.converted, null, 2)}
+                </pre>
               </div>
             </div>
           </motion.div>
