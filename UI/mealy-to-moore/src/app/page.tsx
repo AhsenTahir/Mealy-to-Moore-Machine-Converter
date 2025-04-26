@@ -221,7 +221,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-16 text-sm text-gray-400">
-        Mealy to Moore Converter | Created with Next.js
+        Mealy to Moore Converter | UI designed by @mustafahk27
       </div>
     </main>
   );
