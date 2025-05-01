@@ -19,11 +19,17 @@ type MooreState = {
 
 type MealyMachineData = {
   states: string[];
-  transitions: Transition[];
+  transitions: Array<{
+    from: string;
+    to: string;
+    input: string;
+    output: string;
+  }>;
 };
 
 type MooreMachineData = {
-  states: Array<{ name: string; output: number }>;
+  moore_states?: Array<{ name: string; output: number }>;
+  states?: Array<{ name: string; output: number }>;
   transitions: { [key: string]: string[] };
   inputs_per_state: number;
 };
@@ -33,6 +39,65 @@ type ConversionType = "mealy-to-moore" | "moore-to-mealy";
 type ConversionResult = {
   original: MealyMachineData | MooreMachineData;
   converted: MooreMachineData | MealyMachineData;
+};
+
+const MealyMachineTable = ({ data }: { data: MealyMachineData }) => (
+  <table className="min-w-full text-sm">
+    <thead>
+      <tr className="border-b border-gray-700">
+        <th className="text-left p-2">State</th>
+        {Array.from({ length: (data?.transitions?.length || 0) / (data?.states?.length || 1) }, (_, i) => (
+          <React.Fragment key={i}>
+            <th className="text-left p-2">At_{i}</th>
+            <th className="text-left p-2">Output_{i}</th>
+          </React.Fragment>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {(data?.states || []).map((state) => (
+        <tr key={state} className="border-b border-gray-700/50">
+          <td className="p-2">{state}</td>
+          {(data?.transitions || [])
+            .filter(t => t.from === state)
+            .map((transition, i) => (
+              <React.Fragment key={i}>
+                <td className="p-2">{transition.to}</td>
+                <td className="p-2">{transition.output}</td>
+              </React.Fragment>
+            ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+);
+
+const MooreMachineTable = ({ data }: { data: MooreMachineData }) => {
+  console.log('Moore Machine Table Data:', data);
+  // Handle both data formats (moore_states and states)
+  const states = data?.moore_states || data?.states || [];
+  return (
+    <table className="min-w-full text-sm">
+      <thead>
+        <tr className="border-b border-gray-700">
+          <th className="text-left p-2">State (q/output)</th>
+          {Array.from({ length: data?.inputs_per_state || 0 }, (_, i) => (
+            <th className="text-left p-2" key={`input_${i}`}>On Input {i}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {states.map((state) => (
+          <tr key={state.name} className="border-b border-gray-700/50">
+            <td className="p-2">{state.name}</td>
+            {(data?.transitions?.[state.name] || []).map((transition, i) => (
+              <td className="p-2" key={`transition_${i}`}>{transition}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 };
 
 export default function Home() {
@@ -79,11 +144,11 @@ export default function Home() {
         converted: data.converted
       });
       
-      if (conversionType === 'moore-to-mealy') {
-        console.log('Moore machine data:', {
-          states: data.original.states,
-          transitions: data.original.transitions,
-          inputs_per_state: data.original.inputs_per_state
+      if (conversionType === 'mealy-to-moore') {
+        console.log('Moore machine data (converted):', {
+          moore_states: data.converted.moore_states,
+          transitions: data.converted.transitions,
+          inputs_per_state: data.converted.inputs_per_state
         });
       }
       
@@ -223,57 +288,9 @@ export default function Home() {
                 </h2>
                 <div className="overflow-x-auto">
                   {conversionType === "mealy-to-moore" ? (
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-700">
-                          <th className="text-left p-2">State</th>
-                          {Array.from({ length: ((result?.original as MealyMachineData)?.transitions?.length || 0) / ((result?.original as MealyMachineData)?.states?.length || 1) }, (_, i) => (
-                            <React.Fragment key={i}>
-                              <th className="text-left p-2">At_{i}</th>
-                              <th className="text-left p-2">Output_{i}</th>
-                            </React.Fragment>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {((result?.original as MealyMachineData)?.states || []).map((state) => (
-                          <tr key={state} className="border-b border-gray-700/50">
-                            <td className="p-2">{state}</td>
-                            {((result?.original as MealyMachineData)?.transitions || [])
-                              .filter(t => t.from === state)
-                              .map((transition, i) => (
-                                <React.Fragment key={i}>
-                                  <td className="p-2">{transition.to}</td>
-                                  <td className="p-2">{transition.output}</td>
-                                </React.Fragment>
-                              ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <MealyMachineTable data={result.original as MealyMachineData} />
                   ) : (
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-700">
-                          <th className="text-left p-2">State</th>
-                          <th className="text-left p-2">Output</th>
-                          {Array.from({ length: (result?.original as MooreMachineData)?.inputs_per_state || 0 }, (_, i) => (
-                            <th className="text-left p-2" key={`input_${i}`}>On Input {i}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {((result?.original as MooreMachineData)?.states || []).map((state) => (
-                          <tr key={state.name} className="border-b border-gray-700/50">
-                            <td className="p-2">{state.name}</td>
-                            <td className="p-2">{state.output}</td>
-                            {((result?.original as MooreMachineData)?.transitions?.[state.name] || []).map((transition, i) => (
-                              <td className="p-2" key={`transition_${i}`}>{transition}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <MooreMachineTable data={result.original as MooreMachineData} />
                   )}
                 </div>
               </div>
@@ -285,55 +302,9 @@ export default function Home() {
                 </h2>
                 <div className="overflow-x-auto">
                   {conversionType === "mealy-to-moore" ? (
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-700">
-                          <th className="text-left p-2">State</th>
-                          {Array.from({ length: (result?.converted as MooreMachineData)?.inputs_per_state || 0 }, (_, i) => (
-                            <th className="text-left p-2" key={`input_${i}`}>On Input {i}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {((result?.converted as MooreMachineData)?.states || []).map((state) => (
-                          <tr key={state.name} className="border-b border-gray-700/50">
-                            <td className="p-2">{state.name}</td>
-                            {((result?.converted as MooreMachineData)?.transitions[state.name] || []).map((transition, i) => (
-                              <td className="p-2" key={`transition_${i}`}>{transition}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <MooreMachineTable data={result.converted as MooreMachineData} />
                   ) : (
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-700">
-                          <th className="text-left p-2">State</th>
-                          {Array.from({ length: ((result?.converted as MealyMachineData)?.transitions?.length || 0) / ((result?.converted as MealyMachineData)?.states?.length || 1) }, (_, i) => (
-                            <React.Fragment key={i}>
-                              <th className="text-left p-2">At_{i}</th>
-                              <th className="text-left p-2">Output_{i}</th>
-                            </React.Fragment>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {((result?.converted as MealyMachineData)?.states || []).map((state) => (
-                          <tr key={state} className="border-b border-gray-700/50">
-                            <td className="p-2">{state}</td>
-                            {((result?.converted as MealyMachineData)?.transitions || [])
-                              .filter(t => t.from === state)
-                              .map((transition, i) => (
-                                <React.Fragment key={i}>
-                                  <td className="p-2">{transition.to}</td>
-                                  <td className="p-2">{transition.output}</td>
-                                </React.Fragment>
-                              ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <MealyMachineTable data={result.converted as MealyMachineData} />
                   )}
                 </div>
               </div>
