@@ -1,39 +1,76 @@
 # Mealy-to-Moore-Machine-Converter
+
 ## 📌 Project Description
-This project is a simulation tool that converts a Mealy machine into its equivalent Moore machine. Users can upload an image of a Mealy machine (transition diagram or table), and the system will extract its components and generate the corresponding Moore machine. The actual conversion is handled by a dedicated converter tool, while AI agents assist in utilizing this tool efficiently. The output includes the converted transition table and a visual state diagram.
+A modern web-based tool that provides bidirectional conversion between Mealy and Moore machines. The application features a clean, intuitive interface for inputting machine descriptions and visualizes both the original and converted machines in an interactive format. The conversion logic is implemented in Python with a FastAPI backend, while the frontend is built using Next.js with a sleek, responsive design.
 
 ## 🎯 Objectives
-- Convert Mealy machines to Moore machines using a dedicated converter tool.  
-- Use AI agents to automate the process of interpreting input and interacting with the tool.  
-- Provide a user-friendly interface for uploading Mealy machine diagrams.  
-- Visualize both the original and converted machines clearly.
+- Provide bidirectional conversion between Mealy and Moore machines
+- Offer a modern, user-friendly web interface for machine input and visualization
+- Ensure accurate and efficient conversion algorithms
+- Present clear, readable transition tables for both machine types
 
 ## 🧠 Concepts Covered
-- Deterministic Finite Automata (DFA)  
-- Mealy Machines  
-- Moore Machines  
+- Deterministic Finite Automata (DFA)
+- Mealy Machines
+- Moore Machines
 - State Transition Tables
+- Bidirectional FSM Conversion
 
 ## 🔧 Functional Features
-- Upload image of Mealy machine.  
-- AI agent processes the input and uses the converter tool.  
-- Display of Moore machine transition table and visual diagram.
+- Text-based input for both Mealy and Moore machines
+- Bidirectional conversion (Mealy ↔ Moore)
+- Interactive transition table visualization
+- Real-time error handling and validation
+- Responsive web interface with dark mode
+- Clear presentation of both original and converted machines
 
 ## ⚙️ Tech Stack
-- **Python** – backend logic & conversion algorithm  
-- **Crew AI Agent** – interface automation and logic assistance  
-- **Next.js** – frontend interface  
-- **Graphviz / Matplotlib** – state diagram visualization (optional)
+- **Backend:**
+  - Python with FastAPI
+  - Custom conversion algorithms
+  - CORS middleware for secure API access
+- **Frontend:**
+  - Next.js
+  - React with TypeScript
+  - Motion animations
+  - Tailwind CSS for styling
+- **API:**
+  - RESTful endpoints for conversions
+  - JSON-based data exchange
+  - Error handling and validation
 
-## ⚠️ Challenges
-- State explosion during conversion  
-- Output assignment conflicts  
-- Diagram parsing and accurate extraction
+## 🚀 Input Format
+### Mealy to Moore:
+- Each line represents transitions for a state
+- Format: `next_state output` pairs for each input
+- Example:
+  ```
+  1 0 2 1
+  2 1 0 0
+  ```
 
-*Mitigation:* Modular conversion logic, AI-assisted input handling, and proven visualization libraries.
+### Moore to Mealy:
+- First line: outputs for each state
+- Subsequent lines: transition table
+- Example:
+  ```
+  0 1 0
+  1 2 0
+  2 0 1
+  0 1 2
+  ```
+
+## ⚠️ Challenges & Solutions
+- **State Explosion:** Optimized state mapping algorithm
+- **Input Validation:** Comprehensive error checking and user feedback
+- **UI/UX:** Modern, responsive design with clear visualization
+- **Type Safety:** TypeScript implementation for robust frontend code
 
 ## 📚 References
-- *Hopcroft et al.*, _Introduction to Automata Theory_  
-- TutorialsPoint – Mealy and Moore Machines  
-- GeeksforGeeks – Mealy to Moore Conversion  
+- *Hopcroft et al.*, _Introduction to Automata Theory_
+- TutorialsPoint – Mealy and Moore Machines
+- GeeksforGeeks – Mealy to Moore Conversion
 - Automata Theory Lecture Slides
+
+## 👨‍💻 Contributors
+- Frontend UI Design: @mustafahk27

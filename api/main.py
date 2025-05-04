@@ -2,19 +2,26 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logic.moore_to_mealy import parse_moore_input, convert_to_mealy
 
 app = FastAPI()
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_origins=["http://localhost:3000"],  # Next.js default port
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
 class MealyInput(BaseModel):
+    input_text: str
+
+class MooreInput(BaseModel):
     input_text: str
 
 def parse_mealy_input(input_text: str):
@@ -85,7 +92,7 @@ def convert_to_moore(n: int, m: int, t: List[List[int]], s: List[List[int]]):
         "inputs_per_state": m
     }
 
-@app.post("/convert")
+@app.post("/mealy-to-moore")
 async def convert_mealy_to_moore(input_data: MealyInput):
     # Parse the input
     n, m, t, s = parse_mealy_input(input_data.input_text)
@@ -112,6 +119,32 @@ async def convert_mealy_to_moore(input_data: MealyInput):
         "original": mealy_machine,
         "converted": moore_machine
     }
+
+@app.post("/moore-to-mealy")
+async def convert_moore_to_mealy(input_data: MooreInput):
+    try:
+        # Parse the input
+        n, m, transitions, outputs = parse_moore_input(input_data.input_text)
+        
+        # Create the original Moore machine representation
+        moore_machine = {
+            "states": [{"name": f"q{i}", "output": outputs[i]} for i in range(n)],
+            "transitions": {
+                f"q{i}": [f"q{transitions[i][j]}" for j in range(m)]
+                for i in range(n)
+            },
+            "inputs_per_state": m
+        }
+        
+        # Convert to Mealy machine
+        mealy_machine = convert_to_mealy(n, m, transitions, outputs)
+        
+        return {
+            "original": moore_machine,
+            "converted": mealy_machine
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # Keep this for local testing
 if __name__ == "__main__":
