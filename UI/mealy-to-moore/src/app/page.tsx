@@ -77,26 +77,51 @@ const MooreMachineTable = ({ data }: { data: MooreMachineData }) => {
   // Handle both data formats (moore_states and states)
   const states = data?.moore_states || data?.states || [];
   return (
-    <table className="min-w-full text-sm">
-      <thead>
-        <tr className="border-b border-gray-700">
-          <th className="text-left p-2">State (q/output)</th>
-          {Array.from({ length: data?.inputs_per_state || 0 }, (_, i) => (
-            <th className="text-left p-2" key={`input_${i}`}>On Input {i}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {states.map((state) => (
-          <tr key={state.name} className="border-b border-gray-700/50">
-            <td className="p-2">{state.name}</td>
-            {(data?.transitions?.[state.name] || []).map((transition, i) => (
-              <td className="p-2" key={`transition_${i}`}>{transition}</td>
+    <div>
+      {/* Output values table */}
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold mb-2 text-gray-400">State Outputs:</h3>
+        <table className="min-w-full text-sm mb-6">
+          <thead>
+            <tr className="border-b border-gray-700">
+              {states.map((state, idx) => (
+                <th key={state.name} className="text-left p-2">q{idx}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-gray-700/50">
+              {states.map((state) => (
+                <td key={state.name} className="p-2">{state.output}</td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Transitions table */}
+      <h3 className="text-sm font-semibold mb-2 text-gray-400">State Transitions:</h3>
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="border-b border-gray-700">
+            <th className="text-left p-2">State</th>
+            {Array.from({ length: data?.inputs_per_state || 0 }, (_, i) => (
+              <th className="text-left p-2" key={`input_${i}`}>On Input {i}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {states.map((state, idx) => (
+            <tr key={state.name} className="border-b border-gray-700/50">
+              <td className="p-2">q{idx}</td>
+              {(data?.transitions?.[state.name] || []).map((transition, i) => (
+                <td className="p-2" key={`transition_${i}`}>{transition}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
